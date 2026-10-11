@@ -40,7 +40,9 @@ installer, SHA-256 sidecar, bundle directory and build-log directory.
 - Codex connection is a visible installer task; edit permission is a separate,
   initially unchecked task. For existing configuration, the unchecked edit task
   preserves its existing mode rather than silently changing user preferences.
-- The setup helper locates the desktop app's `codex.exe` or a `codex.exe` on PATH.
+- The setup helper locates the desktop app's `codex.exe` in LocalAppData/OpenAI/Codex/bin
+  (including versioned runtime directories), LocalAppData/Programs/OpenAI/Codex/bin,
+  or PATH. Versioned CLI binaries are preferred over older flat-layout binaries.
   An explicit `--codex-command` path is available for diagnostics. If unavailable,
   the app installation succeeds and explains how to retry/copy configuration.
 - Credentials stay in a protected per-user file. Registration contains executable

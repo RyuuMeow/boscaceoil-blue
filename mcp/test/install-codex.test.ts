@@ -1,10 +1,41 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, mkdir, readFile, rm, writeFile, utimes } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { registerCodex, unregisterCodex } from '../dist/install-codex.js';
+import { desktopCodexCandidates, findCodex, registerCodex, unregisterCodex } from '../dist/install-codex.js';
 import type { Runner } from '../src/install-codex.js';
+
+test('Desktop discovery finds versioned CLI without PATH and ignores non-CLI runtimes', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'bosca-desktop-'));
+  const prior = process.env.LOCALAPPDATA;
+  try {
+    const bin = join(root, 'OpenAI', 'Codex', 'bin');
+    for (const version of ['old', 'new', 'node-only']) await mkdir(join(bin, version), { recursive: true });
+    const old = join(bin, 'old', 'codex.exe');
+    const current = join(bin, 'new', 'codex.exe');
+    await writeFile(old, 'fixture');
+    await utimes(old, new Date(0), new Date(0));
+    await writeFile(current, 'fixture');
+    await writeFile(join(bin, 'node-only', 'node.exe'), 'fixture');
+    process.env.LOCALAPPDATA = root;
+    assert.deepEqual(desktopCodexCandidates(root).slice(0, 2), [current, old]);
+    assert.equal(findCodex(), current);
+    await rm(join(bin, 'new'), { recursive: true });
+    await rm(join(bin, 'old'), { recursive: true });
+    await writeFile(join(bin, 'codex.exe'), 'fixture');
+    assert.equal(findCodex(), join(bin, 'codex.exe'));
+    await rm(join(bin, 'codex.exe'));
+    const legacy = join(root, 'Programs', 'OpenAI', 'Codex', 'bin');
+    await mkdir(legacy, { recursive: true });
+    await writeFile(join(legacy, 'codex.exe'), 'fixture');
+    assert.equal(findCodex(), join(legacy, 'codex.exe'));
+  } finally {
+    if (prior === undefined) delete process.env.LOCALAPPDATA;
+    else process.env.LOCALAPPDATA = prior;
+    await rm(root, { recursive: true });
+  }
+});
 
 function fakeCodex() {
   const state = { entry: null as any, adds: 0, removes: 0 };

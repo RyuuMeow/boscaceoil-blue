@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { spawn, type ChildProcess } from 'node:child_process';
 import { once } from 'node:events';
-import { mkdtemp, mkdir, readFile, writeFile, stat } from 'node:fs/promises';
+import { mkdtemp, mkdir, readFile, writeFile, stat, copyFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { randomUUID } from 'node:crypto';
@@ -23,6 +23,9 @@ test('Windows installer, real Codex registration, exported app, and safe uninsta
   const songs = join(root, 'songs with spaces');
   const env = { ...process.env, CODEX_HOME: codexHome, LOCALAPPDATA: local, APPDATA: roaming, BOSCA_MCP_CONFIG: '' };
   await mkdir(codexHome, { recursive: true });
+  const desktopBin = join(local, 'OpenAI', 'Codex', 'bin', 'test-version');
+  await mkdir(desktopBin, { recursive: true });
+  await copyFile(codex, join(desktopBin, 'codex.exe'));
   await mkdir(join(roaming, 'boscaceoil-blue'), { recursive: true });
   await writeFile(join(codexHome, 'config.toml'), '[mcp_servers.keep_me]\ncommand = "unrelated.exe"\n');
   await writeFile(join(roaming, 'boscaceoil-blue', 'bosca.settings'), '[gui]\nscale=100\n');
@@ -49,7 +52,7 @@ test('Windows installer, real Codex registration, exported app, and safe uninsta
     const helper = join(installed, 'mcp', 'dist', 'install-codex.js');
     const executable = join(installed, 'boscaceoil-blue.exe');
     assert((await stat(executable)).size > 80_000_000);
-    const setupArgs = [helper, '--config-dir', configDir, '--songs-dir', songs, '--codex-command', codex];
+    const setupArgs = [helper, '--config-dir', configDir, '--songs-dir', songs];
     await run(node, setupArgs);
     const first = JSON.parse(await readFile(join(configDir, 'mcp.json'), 'utf8'));
     assert.equal(first.mode, 'read_only');
@@ -111,7 +114,7 @@ test('Windows installer, real Codex registration, exported app, and safe uninsta
     assert(!appLog.includes('SCRIPT ERROR'), appLog);
     await client.close(); client = undefined;
     app.kill(); if (app.exitCode === null) await once(app, 'exit'); app = undefined;
-    await run(node, [helper, '--action', 'unregister', '--config-dir', configDir, '--codex-command', codex]);
+    await run(node, [helper, '--action', 'unregister', '--config-dir', configDir]);
     assert.equal(JSON.parse(await run(codex, ['mcp', 'get', 'keep_me', '--json'])).transport.command, 'unrelated.exe');
     await run(join(installed, 'unins000.exe'), ['/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/SMOKETEST=1', `/LOG=${join(root, 'uninstall.log')}`]);
     await assert.rejects(stat(executable), { code: 'ENOENT' });

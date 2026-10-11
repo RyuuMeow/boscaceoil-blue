@@ -1,6 +1,6 @@
 import { spawnSync } from 'node:child_process';
 import { mkdir, readFile, writeFile, rename, unlink, lstat } from 'node:fs/promises';
-import { existsSync } from 'node:fs';
+import { existsSync, readdirSync, statSync } from 'node:fs';
 import { dirname, join, resolve, isAbsolute } from 'node:path';
 import { homedir } from 'node:os';
 import { fileURLToPath } from 'node:url';
@@ -13,12 +13,34 @@ export type Runner = (args: string[]) => { status: number | null; stdout: string
 type Options = { configDir: string; songsDir: string; mode?: 'read_only' | 'edit'; codexCommand?: string };
 const here = dirname(fileURLToPath(import.meta.url));
 
+export function desktopCodexCandidates(localAppData: string): string[] {
+  if (!isAbsolute(localAppData)) return [];
+  const candidates: string[] = [];
+  for (const bin of [join(localAppData, 'OpenAI', 'Codex', 'bin'),
+    join(localAppData, 'Programs', 'OpenAI', 'Codex', 'bin')]) {
+    // Desktop extracts its CLI into versioned directories. Other directories
+    // here contain Node/rg, so only include those with an actual Codex binary.
+    try {
+      const versions = readdirSync(bin, { withFileTypes: true })
+        .filter(entry => entry.isDirectory())
+        .flatMap(entry => {
+          const path = join(bin, entry.name, 'codex.exe');
+          try { const info = statSync(path); return info.isFile() ? [{ path, modified: info.mtimeMs }] : []; }
+          catch { return []; }
+        }).sort((a, b) => b.modified - a.modified);
+      candidates.push(...versions.map(entry => entry.path));
+    } catch { /* This Desktop layout is not installed. */ }
+    candidates.push(join(bin, 'codex.exe'));
+  }
+  return candidates;
+}
+
 export function findCodex(explicit?: string): string {
   if (explicit) {
     if (!isAbsolute(explicit) || !existsSync(explicit)) throw new Error('The selected Codex executable does not exist.');
     return explicit;
   }
-  const candidates = [join(process.env.LOCALAPPDATA ?? '', 'Programs', 'OpenAI', 'Codex', 'bin', 'codex.exe')];
+  const candidates = desktopCodexCandidates(process.env.LOCALAPPDATA ?? join(homedir(), 'AppData', 'Local'));
   const found = spawnSync('where.exe', ['codex.exe'], { encoding: 'utf8', windowsHide: true, timeout: 3000 });
   if (found.status === 0) candidates.push(...found.stdout.trim().split(/\r?\n/));
   for (const path of candidates) if (isAbsolute(path) && existsSync(path)) return path;
