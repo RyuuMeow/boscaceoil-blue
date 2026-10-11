@@ -8,7 +8,8 @@ param(
     [Parameter(Mandatory)][string]$RcEdit,
     [string]$NpmCli = '',
     [string]$InnoCompiler = 'C:/Program Files (x86)/Inno Setup 6/ISCC.exe',
-    [string]$OutputDirectory = ''
+    [string]$OutputDirectory = '',
+    [ValidatePattern('^\d+\.\d+\.\d+(?:-[A-Za-z0-9.-]+)?$')][string]$Version = '3.2.0-preview.2'
 )
 $ErrorActionPreference = 'Stop'
 $project = Split-Path $PSScriptRoot -Parent
@@ -67,9 +68,10 @@ try {
     Copy-Item -LiteralPath $GodotCopyright -Destination "$bundle/licenses/Godot-COPYRIGHT.txt"
     Copy-Item -LiteralPath $GdsionLicense -Destination "$bundle/licenses/GDSiON-LICENSE.txt"
     Copy-Item -LiteralPath 'assets/fonts/FFF Aquarius - License.txt' -Destination "$bundle/licenses/FFF-Aquarius-LICENSE.txt"
-    & $InnoCompiler /Qp "/DBundleDir=$bundle" "/DOutputDir=$OutputDirectory" packaging/windows/bosca-mcp.iss
+    $numericVersion = ($Version -split '-')[0] + '.0'
+    & $InnoCompiler /Qp "/DBundleDir=$bundle" "/DOutputDir=$OutputDirectory" "/DReleaseVersion=$Version" "/DNumericVersion=$numericVersion" packaging/windows/bosca-mcp.iss
     if ($LASTEXITCODE -ne 0) { throw 'Installer compilation failed.' }
-    $installer = Join-Path $OutputDirectory 'Bosca-Ceoil-Blue-MCP-3.2-preview1-Windows-x64-Setup.exe'
+    $installer = Join-Path $OutputDirectory "Bosca-Ceoil-Blue-MCP-$Version-Windows-x64-Setup.exe"
     $hash = (Get-FileHash -Algorithm SHA256 -LiteralPath $installer).Hash.ToLowerInvariant()
     [IO.File]::WriteAllText("$installer.sha256", "$hash  $([IO.Path]::GetFileName($installer))`n")
     Write-Output "INSTALLER=$installer"

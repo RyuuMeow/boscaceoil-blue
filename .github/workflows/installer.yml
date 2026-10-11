@@ -1,0 +1,102 @@
+name: Windows MCP Installer
+
+on:
+  pull_request:
+    paths: ['mcp/**', 'automation/**', 'scripts/**', 'packaging/**', '.github/workflows/installer.yml']
+  push:
+    branches: [main, 'feat/installer-*', 'fix/installer-*']
+    tags: ['mcp-v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: installer-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.16.0'
+          cache: npm
+          cache-dependency-path: mcp/package-lock.json
+      - uses: ./.github/actions/setup-deps
+        with:
+          platform: windows
+          gdsion-version: '0.7-beta8'
+      - name: Prepare pinned build tools
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: ./scripts/setup-installer-ci.ps1
+      - run: npm --prefix mcp ci
+      - name: Test MCP
+        shell: pwsh
+        run: ./scripts/test-mcp.ps1
+      - name: Build installer
+        shell: pwsh
+        env:
+          RELEASE_REF: ${{ github.ref_name }}
+          RELEASE_TYPE: ${{ github.ref_type }}
+        run: |
+          $version = '3.2.0-preview.2'
+          if ($env:RELEASE_TYPE -eq 'tag') {
+            if ($env:RELEASE_REF -notmatch '^mcp-v(\d+\.\d+\.\d+(?:-[A-Za-z0-9.-]+)?)$') { throw 'Invalid MCP release tag.' }
+            $version = $Matches[1]
+          }
+          ./scripts/build-windows-installer.ps1 -Godot $env:BOSCA_GODOT -TemplateDirectory "$env:INSTALLER_TOOLS/templates/templates" -Node (Get-Command node).Source -NodeLicense "$env:INSTALLER_TOOLS/node-LICENSE.txt" -GodotCopyright "$env:INSTALLER_TOOLS/godot-COPYRIGHT.txt" -GdsionLicense "$env:INSTALLER_TOOLS/gdsion-LICENSE.txt" -RcEdit "$pwd/rcedit.exe" -OutputDirectory "$pwd/export/installer" -Version $version
+          "BOSCA_INSTALLER_EXE=$pwd/export/installer/Bosca-Ceoil-Blue-MCP-$version-Windows-x64-Setup.exe" >> $env:GITHUB_ENV
+      - name: Test installed application and Codex registration
+        run: npm --prefix mcp run test:installer
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-mcp-installer
+          path: |
+            export/installer/*.exe
+            export/installer/*.sha256
+          if-no-files-found: error
+      - name: Upload build diagnostics on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: installer-diagnostics
+          path: |
+            export/build-*/import.log
+            export/build-*/export.log
+            ${{ runner.temp }}/bosca-check-*/*.log
+            ${{ runner.temp }}/bosca-installer-*/*.log
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/mcp-v')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: windows-mcp-installer
+          path: installer
+      - name: Publish tested installer
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          printf '%s\n' 'Windows x64 installer with bundled Node.js and Codex MCP quick setup.' 'Unsigned community build. Editing is optional during setup.' 'Install, keep Bosca open, and restart Codex MCP servers after setup.' > release-notes.md
+          flags=()
+          version="${RELEASE_TAG#mcp-v}"
+          [[ "$version" == *-* ]] && flags+=(--prerelease)
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            gh release upload "$RELEASE_TAG" installer/* --clobber
+          else
+            gh release create "$RELEASE_TAG" installer/* --verify-tag --title "Bosca Ceoil Blue MCP ${RELEASE_TAG#mcp-v}" --notes-file release-notes.md "${flags[@]}"
+          fi

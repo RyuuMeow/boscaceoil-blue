@@ -5,13 +5,20 @@
   #error OutputDir must point to the installer output directory
 #endif
 
+#ifndef ReleaseVersion
+  #define ReleaseVersion "3.2.0-preview.2"
+#endif
+#ifndef NumericVersion
+  #define NumericVersion "3.2.0.0"
+#endif
+
 [Setup]
 AppId={{D077BE4F-22CB-4F43-9F52-C3CD51723D24}
 AppName=Bosca Ceoil Blue MCP
-AppVersion=3.2-mcp.1
-AppVerName=Bosca Ceoil Blue 3.2 MCP Preview 1
+AppVersion={#ReleaseVersion}
+AppVerName=Bosca Ceoil Blue MCP {#ReleaseVersion}
 AppPublisher=Bosca Ceoil Blue contributors
-VersionInfoVersion=3.2.0.1
+VersionInfoVersion={#NumericVersion}
 DefaultDirName={localappdata}\Programs\Bosca Ceoil Blue MCP
 DefaultGroupName=Bosca Ceoil Blue MCP
 PrivilegesRequired=lowest
@@ -19,7 +26,7 @@ ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 MinVersion=10.0
 OutputDir={#OutputDir}
-OutputBaseFilename=Bosca-Ceoil-Blue-MCP-3.2-preview1-Windows-x64-Setup
+OutputBaseFilename=Bosca-Ceoil-Blue-MCP-{#ReleaseVersion}-Windows-x64-Setup
 SetupIconFile={#BundleDir}\bosca.ico
 UninstallDisplayIcon={app}\boscaceoil-blue.exe
 LicenseFile={#BundleDir}\LICENSE.txt

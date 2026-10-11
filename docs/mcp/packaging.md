@@ -12,7 +12,7 @@ Use Godot 4.3 and matching official `windows_release_x86_64.exe` and
 `windows_release_x86_64_console.exe` templates from the
 [4.3 release](https://github.com/godotengine/godot/releases/tag/4.3-stable).
 Install GDSiON 0.7-beta8 into `bin/` and run `npm --prefix mcp ci` first.
-Provide Node.js 22+ (this preview bundles 24.19.0), its full LICENSE, Godot's
+Provide Node.js 22+ (CI bundles 22.16.0), its full LICENSE, Godot's
 COPYRIGHT.txt, GDSiON's LICENSE, and rcedit 2.0.0. Keep inputs outside the repository.
 
 ```powershell
@@ -32,6 +32,31 @@ to the standard Inno Setup 6 installation. The build keeps unique scratch folder
 under `export/`; it never recursively removes an existing directory. Export
 templates and editor settings use a temporary APPDATA scope. The script emits the
 installer, SHA-256 sidecar, bundle directory and build-log directory.
+Pass `-Version 3.2.0-preview.2` to set the installer metadata and output filename.
+The default is `3.2.0-preview.2`; version strings must be three numeric parts
+with an optional prerelease suffix.
+
+## GitHub Actions and releases
+
+`Windows MCP Installer` (`.github/workflows/installer.yml`) runs on main,
+installer feature/fix branches, relevant pull requests, and manual dispatch.
+It installs pinned tools, runs the full MCP checks, exports the application,
+builds the installer and tests installation, automatic Codex discovery, real
+MCP editing/export and safe uninstallation in an isolated profile. Successful
+runs upload the `.exe` and its `.sha256` as `windows-mcp-installer` artifacts.
+
+Push a tag such as `mcp-v3.2.0-preview.2` on the commit to release. The same
+workflow derives the installer version from the tag and publishes a GitHub
+Release only after build and smoke tests pass. Versions containing a suffix
+are prereleases. Tag names use the separate `mcp-v` prefix to avoid the upstream
+cross-platform signing/release workflow. Branch builds never publish a release.
+Only the release job receives `contents: write`; no personal token or signing
+secret is needed. Re-running a successful tag workflow replaces that release's
+installer/checksum assets, so only rerun when rebuilding that exact tag is intended.
+
+Build tool downloads are centralized in `scripts/setup-installer-ci.ps1`.
+Codex 0.162.1 is downloaded only for CI verification; it is not bundled into
+the installer. Diagnostic logs are uploaded on failure. The binaries are unsigned.
 
 ## Installation behavior
 
@@ -54,7 +79,7 @@ installer, SHA-256 sidecar, bundle directory and build-log directory.
 ## Installer verification
 
 ```powershell
-$env:BOSCA_INSTALLER_EXE = 'C:/builds/bosca/Bosca-Ceoil-Blue-MCP-3.2-preview1-Windows-x64-Setup.exe'
+$env:BOSCA_INSTALLER_EXE = 'C:/builds/bosca/Bosca-Ceoil-Blue-MCP-3.2.0-preview.2-Windows-x64-Setup.exe'
 $env:BOSCA_CODEX_EXE = 'C:/path/to/codex.exe'
 npm --prefix mcp run test:installer
 ```

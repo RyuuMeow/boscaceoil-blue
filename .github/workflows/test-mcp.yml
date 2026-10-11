@@ -2,7 +2,7 @@ name: Test MCP
 on:
   pull_request:
   push:
-    branches: [main, 'feat/mcp-*']
+    branches: [main, 'feat/**', 'fix/**']
 permissions:
   contents: read
 jobs:
