@@ -96,6 +96,12 @@ The optional desktop MCP extension can read and edit the current song, share und
 history, save CEOL, and export WAV/MIDI. It is disabled by default. See the
 [installation and usage guide](docs/mcp/README.md) for setup and tested limits.
 
+Windows x64 installers for this MCP fork are available in
+[GitHub Releases](https://github.com/RyuuMeow/boscaceoil-blue/releases).
+They bundle Node.js and offer Codex quick setup, with optional editing permission.
+These are unsigned community builds. See the [build and release guide](docs/mcp/packaging.md)
+for CI checks and the `mcp-v*` release-tag convention.
+
 ### Contributing to documentation
 
 The online documentation is maintained as a part of this repository. You can find more about the process of contributing to documentation in the [`/docs`](/docs/README.md) folder.
