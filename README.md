@@ -90,6 +90,12 @@ The project is being developed using the latest available official build of **Go
 - Get the [latest release of **GDSiON 0.7**](https://github.com/YuriSizov/gdsion/releases) and extract it into the `bin` folder in the project root.
 - Open and edit the project with **[Godot 4.3](https://godotengine.org/download/archive/#4.3)**.
 
+### Local AI control (MCP)
+
+The optional desktop MCP extension can read and edit the current song, share undo
+history, save CEOL, and export WAV/MIDI. It is disabled by default. See the
+[installation and usage guide](docs/mcp/README.md) for setup and tested limits.
+
 ### Contributing to documentation
 
 The online documentation is maintained as a part of this repository. You can find more about the process of contributing to documentation in the [`/docs`](/docs/README.md) folder.

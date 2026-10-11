@@ -68,6 +68,7 @@ var _buffer_size: int = BufferSize.BUFFER_SMALL
 var _note_format: int = NoteFormat.FORMAT_CDEFGAB
 # Settings: Files.
 var _last_opened_folder: String = ""
+var mcp_config_path: String = ""
 
 
 func _init() -> void:
@@ -105,6 +106,7 @@ func load_settings() -> void:
 	_set_note_format_safe(   _stored_file.get_value("customization", "note_format", _note_format))
 	
 	_last_opened_folder =    _stored_file.get_value("files", "last_folder", _last_opened_folder)
+	mcp_config_path = _stored_file.get_value("mcp", "config_path", "")
 	
 	_first_time = false
 	settings_loaded.emit()
@@ -140,6 +142,7 @@ func _save_settings_debounced() -> void:
 	_stored_file.set_value("customization", "note_format", _note_format)
 	
 	_stored_file.set_value("files", "last_folder", _last_opened_folder)
+	_stored_file.set_value("mcp", "config_path", mcp_config_path)
 	
 	# Save everything.
 	var error := _stored_file.save(CONFIG_PATH)

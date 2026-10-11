@@ -18,6 +18,10 @@ func _ready() -> void:
 	set_process(false)
 
 
+func is_busy() -> bool:
+	return not _active_id.is_empty()
+
+
 func start_job(params: Dictionary) -> Dictionary:
 	var error := AutomationResult.fields(params, ["format", "root_id", "relative_path", "start", "end", "overwrite"], ["format", "root_id", "relative_path"])
 	if not error.is_empty(): return error

@@ -1,7 +1,7 @@
 # Bosca Ceoil Blue MCP 擴充設計與實作計畫
 
 日期：2026-10-12（Asia/Taipei）
-狀態：實作進行中（`feat/mcp-runtime`）。核心編曲、CEOL 存取與 WAV／MIDI jobs 已有通過測試的版本；尚未完成全部發行驗收。
+狀態：首輪實作已交付（`feat/mcp-runtime`）。編曲、CEOL、WAV／MIDI、設定 UI、測試腳本與 CI 已實作；完整發行驗收仍有下列明列項目。
 基準：`main`，`4b6b5c6`（3.2-dev）；規劃前工作樹乾淨。
 目標專案：`C:\Users\guguc\GitHub\boscaceoil-blue`。
 
@@ -11,8 +11,9 @@
 - 已接入歌曲／樂器／pattern／音符／編曲／loop／播放／Undo／Redo，包含 revision 衝突與 operation_id 去重。
 - UI 的音符新增／刪除已與 MCP 共用 note replacement command。
 - CEOL v1/v2/v3 載入前驗證、安全儲存、WAV／MIDI 非同步 job／取消已實作。
-- 驗證：57 項 Godot domain checks、10 項 Node／協定／檔案測試，以及一條真實 MCP client＋Godot 主場景端到端測試（含 WAV/MIDI／取消）通過。
-- 安裝入口與目前限制見 [docs/mcp/README.md](docs/mcp/README.md)。設定 UI、CI、更多故障注入與跨平台打包仍待收尾；以下任務勾選以完整驗收為準。
+- 驗證：83 項 Godot domain／設定 UI 建構 checks、11 項 Node／協定／檔案測試，以及一條真實 MCP client＋Godot 主場景端到端測試（含 WAV/MIDI／取消／同名檔案故障復原／錯誤認證／超長包）通過。
+- 設定 UI 可控制啟用、唯讀、port、root、token rotation、斷線與複製 host 設定；初次 config 由 CLI 產生。已加入 `scripts/test-mcp.ps1` 與 Windows CI workflow。Windows PCK 封裝通過，已排除 Node／測試資料。
+- 交付基礎：核心 commit `facc514`；後續設定／CI／文件變更見本分支紀錄。安裝與限制見 [docs/mcp/README.md](docs/mcp/README.md)。GitHub CI 尚未遠端執行；完整 executable／Web 匯出、原生視窗手動互動、人工聆聽、Linux/macOS 與效能分位數仍待發行驗收。下列細項未勾選代表整項驗收未齊，不代表其程式完全未做。
 - 實作調整：Godot 4.3 的 Windows rename 會先移除既有目標；檔案服務改以固定 Node publisher 執行原子發布，Godot 仍負責格式與資料夾驗證。首版只接受 root 下的單層檔名，暫不開放子資料夾。
 
 ## 1. 目標、範圍與完成定義
@@ -383,14 +384,14 @@ docs/mcp/
 | Product | MCP 編輯→UI 顯示→UI Undo→MCP 讀取 | 人與 AI 操作相同歌曲狀態 |
 | Packaging | 停用、Web、Windows 路徑、token 排除 | 未使用 MCP 者不增加 Node 執行需求 |
 
-以下命令是**待 T15 建立的正式入口**，目前並不存在；文件不可將它們描述成已可執行：
+以下為已建立並在 Windows 執行的入口；先安裝 Node 與 GDSiON，並用 `-Godot` 指定 Godot 4.3 路徑：
 
 ```powershell
 npm --prefix mcp ci
 npm --prefix mcp run typecheck
 npm --prefix mcp run test:unit
 npm --prefix mcp run build
-./scripts/test-mcp.ps1 -Suite Godot
+./scripts/test-mcp.ps1 -Suite Domain -Godot C:/path/to/godot.exe
 ./scripts/test-mcp.ps1 -Suite Integration
 ./scripts/test-mcp.ps1 -Suite All
 ```

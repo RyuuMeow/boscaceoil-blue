@@ -1,0 +1,32 @@
+name: Test MCP
+on:
+  pull_request:
+  push:
+    branches: [main, 'feat/mcp-*']
+permissions:
+  contents: read
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: mcp/package-lock.json
+      - uses: ./.github/actions/setup-deps
+        with:
+          platform: windows
+          gdsion-version: '0.7-beta8'
+      - name: Install Godot 4.3
+        shell: pwsh
+        run: |
+          Invoke-WebRequest https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_win64.exe.zip -OutFile "$env:RUNNER_TEMP/godot.zip"
+          Expand-Archive "$env:RUNNER_TEMP/godot.zip" "$env:RUNNER_TEMP/godot"
+          "BOSCA_GODOT=$env:RUNNER_TEMP/godot/Godot_v4.3-stable_win64_console.exe" >> $env:GITHUB_ENV
+      - run: npm --prefix mcp ci
+      - name: Run all MCP checks
+        shell: pwsh
+        run: ./scripts/test-mcp.ps1

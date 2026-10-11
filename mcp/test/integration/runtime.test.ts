@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { spawn } from 'node:child_process';
-import { createServer } from 'node:net';
+import { createServer, createConnection } from 'node:net';
 import { once } from 'node:events';
 import { mkdtemp, mkdir, writeFile, readFile, rm } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
@@ -50,6 +50,19 @@ test('real MCP client edits, undoes, saves and reloads the real Godot applicatio
     raw.close();
     assert(ready, `Godot bridge did not start:\n${logs}`);
     await new Promise(done => setTimeout(done, 100)); // Let Godot observe the discovery socket closing.
+    async function expectDisconnect(payload: string) {
+      const socket = createConnection({ host: '127.0.0.1', port });
+      await new Promise<void>((done, reject) => {
+        const timer = setTimeout(() => { socket.destroy(); reject(new Error('Invalid bridge client was not disconnected.')); }, 4000);
+        socket.on('error', () => {}); // Reset is a valid rejection.
+        socket.once('close', () => { clearTimeout(timer); done(); });
+        socket.once('connect', () => socket.write(payload));
+      });
+      await new Promise(done => setTimeout(done, 50));
+    }
+    await expectDisconnect(JSON.stringify({ id: 'wrong-token', method: 'hello', params: { token: 'wrong', bridge_version: 1 } }) + '\n');
+    await expectDisconnect('{not-json}\n');
+    await expectDisconnect('x'.repeat(1048577));
     await client.connect(transport);
     async function call(name: string, args: Record<string, unknown> = {}) {
       const response = await client.callTool({ name, arguments: args });
@@ -123,6 +136,14 @@ test('real MCP client edits, undoes, saves and reloads the real Godot applicatio
     assert.equal(wav.subarray(0, 4).toString(), 'RIFF');
     assert.equal(wav.subarray(8, 12).toString(), 'WAVE');
     assert(wav.length > 44);
+    assert.equal((await call('bosca_status')).busy, false);
+    assert.deepEqual((await call('bosca_song_get')).loop, beforeExport.loop);
+    const failedJob = await edit('bosca_export_start', { format: 'wav', root_id: 'songs', relative_path: 'race.wav', start: 0, end: 2 });
+    await writeFile(join(songs, 'race.wav'), 'existing file must survive');
+    const failed = await waitJob(failedJob.job_id);
+    assert.equal(failed.state, 'failed', JSON.stringify(failed));
+    assert.equal(failed.error.code, 'FILE_EXISTS');
+    assert.equal(await readFile(join(songs, 'race.wav'), 'utf8'), 'existing file must survive');
     assert.equal((await call('bosca_status')).busy, false);
     assert.deepEqual((await call('bosca_song_get')).loop, beforeExport.loop);
     const cancelled = await edit('bosca_export_start', { format: 'wav', root_id: 'songs', relative_path: 'cancelled.wav', start: 0, end: 8 });

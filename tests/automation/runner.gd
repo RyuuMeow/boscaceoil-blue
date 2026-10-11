@@ -29,6 +29,8 @@ func _run() -> void:
 	var status := _router.dispatch("bosca_status", {})
 	_check(status.result.mode == "read_only", "read-only default")
 	_check(_edit("bosca_song_update", { "bpm": 100 }).error.code == "READ_ONLY", "read-only rejects write")
+	for method: String in AutomationRouter.MUTATIONS:
+		_check(_edit(method).error.code == "READ_ONLY", "read-only rejects " + method)
 	_router.allow_editing = true
 	var initial_revision := _router.revision
 	_check(_router.dispatch("bosca_pattern_get", { "pattern_index": -1 }).has("error"), "negative index rejected")
@@ -98,9 +100,42 @@ func _run() -> void:
 	_edit("bosca_history_step", { "action": "undo" })
 	_check(Controller.current_song.arrangement.timeline_bars[0][0] == 0, "last-pattern undo restores arrangement")
 	_test_files()
+	_test_limits()
+	_test_settings()
 	Controller.music_player.stop_playback()
 	print("AUTOMATION_TESTS: %d checks, %d failures" % [_checks, _failures])
 	get_tree().quit(1 if _failures else 0)
+
+
+func _test_limits() -> void:
+	_edit("bosca_song_new", { "discard_unsaved": true })
+	var notes: Array = []
+	for index in 128:
+		notes.append({ "pitch": index % 104, "position": index / 104, "length": 1 })
+	_check(_edit("bosca_notes_set", { "pattern_index": 0, "mode": "replace", "notes": notes }).has("result"), "128 notes accepted")
+	notes.append({ "pitch": 25, "position": 2, "length": 1 })
+	_check(_edit("bosca_notes_set", { "pattern_index": 0, "mode": "replace", "notes": notes }).has("error"), "129 notes rejected")
+	_edit("bosca_history_step", { "action": "undo" })
+	_check(Controller.state_manager.can_redo(), "redo available after undo")
+	_edit("bosca_notes_set", { "pattern_index": 0, "mode": "replace", "notes": notes })
+	_check(Controller.state_manager.can_redo(), "invalid batch preserves redo")
+	_check(_edit("bosca_arrangement_set", { "cells": [{ "bar": 999, "channel": 7, "pattern_index": 0 }] }).has("result"), "last timeline cell accepted")
+	_check(_edit("bosca_arrangement_set", { "cells": [{ "bar": 1000, "channel": 0, "pattern_index": 0 }] }).has("error"), "bar 1000 rejected")
+
+
+func _test_settings() -> void:
+	var bridge := AutomationBridge.new()
+	add_child(bridge)
+	_check(not bridge.is_processing(), "bridge disabled without configuration")
+	bridge.reload_configuration("user://missing-mcp-config.json")
+	_check(bridge.status_message == "Cannot read configuration.", "configuration failure visible")
+	var dialog := AutomationSettings.new()
+	dialog.bridge = bridge
+	add_child(dialog)
+	_check(not dialog._enabled.button_pressed && not dialog._editing.button_pressed, "settings UI defaults disabled and read-only")
+	_check(dialog._port.value == 37641, "settings UI default port")
+	dialog.free()
+	bridge.free()
 
 
 func _test_files() -> void:

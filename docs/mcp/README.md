@@ -24,7 +24,20 @@ Replace the example paths with your own **absolute** paths. The song directory m
 already exist. Configuration creation will not overwrite an existing file. It
 generates a random token, protects the file for the current user, and defaults to
 `read_only`. To enable editing, initially create the configuration with
-`--mode edit`, or change its `mode` to `edit` before starting Bosca.
+`--mode edit`, or use Advanced → MCP Settings after selecting the configuration.
+
+The settings dialog can enable/disable MCP, select read-only or editing mode,
+change the port/song root, rotate the token, disconnect a client and copy the host
+configuration. Apply saves the selected path in Bosca's preferences. An environment
+variable overrides that remembered path on the next launch. Token rotation
+disconnects the old client immediately; restart the host's MCP server to reread it.
+Settings cannot change during an active MCP export. The first configuration is
+created by the CLI above; the UI then updates it through the same protected writer.
+
+For CLI updates, pass `--update true` with `--root`, `--mode`, `--port` and
+`--enabled true|false`; add `--rotate true` to replace the token. Omitted mode,
+port and enabled options use the creation defaults. A failed update preserves the
+original file. Keep the configuration and its parent directory private.
 
 Start Bosca with the configuration path in its environment:
 
@@ -107,15 +120,13 @@ Disconnecting the client does not quit Bosca or cancel a running export.
 ## Development checks
 
 ```powershell
-npm --prefix mcp run typecheck
-npm --prefix mcp run build
-npm --prefix mcp run test:unit
-$env:BOSCA_GODOT = 'C:/path/to/Godot_v4.3-stable_win64_console.exe'
-npm --prefix mcp run test:integration
+./scripts/test-mcp.ps1 -Godot C:/path/to/Godot_v4.3-stable_win64_console.exe
 ```
 
-Import the Godot project first. A fresh checkout may need a second editor import
-after the GDSiON extension is discovered. Integration tests use a real application
+The script builds and typechecks TypeScript, runs unit tests, imports Godot twice,
+then runs domain and integration checks. Use `-Suite Unit`, `Domain` or `Integration`
+for focused checks. `-Node` and `-NpmCli` support explicit runtime paths. Diagnostic
+logs are retained in a fresh temporary directory. Integration tests use a real application
 scene, official MCP client, synthesizer, CEOL saver/loader and WAV/MIDI exporters;
 they create and clean up their own output directory.
 
@@ -124,6 +135,16 @@ The domain runner is `tests/automation/runner.tscn`. It requires
 executable path), and prints `AUTOMATION_TESTS: ...` with the check count. Missing
 that completion marker or any `SCRIPT ERROR` is a failed run even if Godot exits 0.
 
-Current platform validation is Windows/headless with real GDSiON; this does not
-claim manual listening, Linux/macOS release validation, or a finished settings UI.
-See `plan.md` for remaining release work.
+Current validation: 83 Godot domain/UI-construction checks, 11 Node tests and one
+end-to-end scenario through the official SDK client and real GDSiON. The scenario
+covers two voices/eight bars, undo/redo, CEOL round-trip, WAV/MIDI, cancellation,
+authentication rejection, oversized messages and publication failure recovery.
+Windows PCK export succeeds and excludes MCP dependencies/tests. The Windows CI
+workflow runs the same suite, but has not been run on GitHub yet.
+
+Manual listening, native-dialog interaction, packaged executable smoke tests,
+performance percentiles and Linux/macOS/Web release validation remain release
+gates. The unmodified baseline also emits Godot resource-leak warnings on headless
+exit; these warnings are not counted as passed assertions. See `plan.md` for the
+release checklist, [protocol.md](protocol.md) for semantics and
+[troubleshooting.md](troubleshooting.md) for recovery.

@@ -16,6 +16,11 @@ extends MarginContainer
 
 
 func _ready() -> void:
+	if not OS.has_feature("web"):
+		var mcp_button := Button.new()
+		mcp_button.text = "MCP SETTINGS"
+		$Layout/ExtraControls/Contents.add_child(mcp_button)
+		mcp_button.pressed.connect(_show_mcp_settings)
 	_populate_effect_options()
 	_populate_buffer_size_options()
 	_populate_gui_scale_options()
@@ -187,3 +192,12 @@ func _change_gui_scale() -> void:
 
 func _change_note_format() -> void:
 	Controller.settings_manager.set_note_format(_note_format_picker.get_selected().id)
+
+
+func _show_mcp_settings() -> void:
+	var bridge := get_tree().root.find_child("AutomationBridge", true, false) as AutomationBridge
+	if not bridge: return
+	var dialog := AutomationSettings.new()
+	dialog.bridge = bridge
+	add_child(dialog)
+	dialog.popup_centered(Vector2i(650, 520))

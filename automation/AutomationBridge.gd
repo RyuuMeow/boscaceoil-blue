@@ -13,6 +13,9 @@ var _output := PackedByteArray()
 var _authenticated: bool = false
 var _accepted_at: int = 0
 var _token: String = ""
+var config_path: String = ""
+var status_message: String = "Disabled"
+var preferences: Dictionary = {}
 
 
 func _ready() -> void:
@@ -23,30 +26,60 @@ func _ready() -> void:
 	set_process(false)
 	if OS.has_feature("web"):
 		return
-	var config_path := OS.get_environment("BOSCA_MCP_CONFIG")
+	config_path = OS.get_environment("BOSCA_MCP_CONFIG")
+	if config_path.is_empty():
+		config_path = Controller.settings_manager.mcp_config_path
+	reload_configuration(config_path)
+
+
+func reload_configuration(path: String) -> void:
+	if router.jobs && router.jobs.is_busy():
+		status_message = "Wait for the export to finish before changing MCP settings."
+		return
+	_disconnect()
+	_server.stop()
+	set_process(false)
+	_token = ""
+	preferences = {}
+	config_path = path
+	status_message = "Disabled"
 	if config_path.is_empty():
 		return
 	var file := FileAccess.open(config_path, FileAccess.READ)
 	if not file || file.get_length() > 65536:
-		printerr("MCP: Cannot read configuration.")
+		status_message = "Cannot read configuration."
 		return
 	var config: Variant = JSON.parse_string(file.get_as_text())
-	if not config is Dictionary || config.get("enabled", false) != true:
+	if not config is Dictionary:
+		status_message = "Invalid configuration JSON."
+		return
+	preferences = config.duplicate(true)
+	preferences.erase("token")
+	if config.get("enabled", false) != true:
 		return
 	if not config.get("token") is String || config.token.length() < 32 || config.token.length() > 256:
-		printerr("MCP: Token must contain 32 to 256 characters.")
+		status_message = "Token must contain 32 to 256 characters."
 		return
 	if not AutomationResult.is_integer(config.get("port", 37641), 1024, 65535):
-		printerr("MCP: Invalid port.")
+		status_message = "Invalid port."
 		return
 	_token = config.token
 	router.allow_editing = config.get("mode", "read_only") == "edit"
 	router.files.configure(config)
 	var error := _server.listen(int(config.get("port", 37641)), "127.0.0.1")
 	if error != OK:
-		printerr("MCP: Loopback port unavailable (code %d)." % error)
+		status_message = "Loopback port unavailable (code %d)." % error
 		return
 	set_process(true)
+	status_message = "Listening on 127.0.0.1:%d" % int(config.get("port", 37641))
+
+
+func disconnect_client() -> void:
+	_disconnect()
+
+
+func connection_status() -> String:
+	return status_message + (" / Client connected" if _authenticated else " / No client")
 
 
 func _exit_tree() -> void:
