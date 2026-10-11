@@ -25,6 +25,10 @@ func _ready() -> void:
 	_pattern_editor.visible = true
 	_locked_indicator.visible = false
 	Controller.io_manager.initialize_song()
+	if not OS.has_feature("web"):
+		var automation_bridge := AutomationBridge.new()
+		automation_bridge.name = "AutomationBridge"
+		add_child(automation_bridge)
 	_edit_current_song()
 	
 	if not Engine.is_editor_hint():

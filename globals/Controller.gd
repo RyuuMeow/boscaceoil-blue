@@ -332,7 +332,7 @@ func update_status_notes_dropped(dropped_amount: int) -> void:
 
 # Song editing.
 
-func set_current_song(song: Song) -> void:
+func set_current_song(song: Song, autoplay: bool = true) -> void:
 	state_manager.clear_state_memory()
 	
 	current_song = song
@@ -340,7 +340,8 @@ func set_current_song(song: Song) -> void:
 	_change_current_instrument(0, false)
 	
 	music_player.reset_driver()
-	music_player.start_playback()
+	if autoplay:
+		music_player.start_playback()
 	
 	song_loaded.emit()
 

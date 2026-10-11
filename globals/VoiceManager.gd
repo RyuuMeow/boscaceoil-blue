@@ -637,6 +637,10 @@ func _map_sub_category(voice_data: VoiceData) -> void:
 
 # Public methods.
 
+func get_voice_count() -> int:
+	return _voices.size()
+
+
 func get_categories() -> PackedStringArray:
 	return _categories
 

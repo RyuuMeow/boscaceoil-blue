@@ -378,6 +378,30 @@ func stop_playback() -> void:
 
 # Data rendering and exporting.
 
+func capture_transport_state() -> Dictionary:
+	return { "playing": _music_playing, "pattern_time": _pattern_time,
+		"bar": Controller.current_song.arrangement.current_bar_idx if Controller.current_song else 0 }
+
+
+func restore_transport_state(state: Dictionary) -> void:
+	stop_playback()
+	_pattern_time = int(state.pattern_time)
+	if Controller.current_song:
+		Controller.current_song.arrangement.current_bar_idx = int(state.bar)
+	if state.playing:
+		start_playback()
+	elif _pattern_time >= 0:
+		playback_paused.emit()
+
+
+func is_exporting() -> bool:
+	return _music_exporting
+
+
+func cancel_export() -> void:
+	_stop_exporting()
+
+
 func start_exporting(callback: Callable) -> void:
 	if _music_exporting:
 		return

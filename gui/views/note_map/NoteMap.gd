@@ -714,17 +714,10 @@ func _add_note_at_cursor() -> void:
 	
 	var note_data := Vector3i(note_value, note_indexed.x, _note_cursor_size)
 	
-	var pattern_state := Controller.state_manager.create_state_change(StateManager.StateChangeType.PATTERN, Controller.current_pattern_index)
-	pattern_state.add_do_action(func() -> void:
-		var reference_pattern := Controller.current_song.patterns[pattern_state.reference_id]
-		reference_pattern.add_note(note_data.x, note_data.y, note_data.z)
-	)
-	pattern_state.add_undo_action(func() -> void:
-		var reference_pattern := Controller.current_song.patterns[pattern_state.reference_id]
-		reference_pattern.remove_note(note_data.x, note_data.y, true)
-	)
-	
-	Controller.state_manager.commit_state_change(pattern_state)
+	var next_notes: Array[Vector3i] = []
+	next_notes.assign(current_pattern.notes.slice(0, current_pattern.note_amount))
+	next_notes.append(note_data)
+	SongEditService.replace_notes(Controller.current_pattern_index, next_notes, true)
 
 
 func _remove_note_at_cursor() -> void:
@@ -745,17 +738,10 @@ func _remove_note_at_cursor() -> void:
 	var note_data := Vector3i(note_value, note_indexed.x, 0)
 	note_data.z = current_pattern.get_note_length(note_data.x, note_data.y)
 	
-	var pattern_state := Controller.state_manager.create_state_change(StateManager.StateChangeType.PATTERN, Controller.current_pattern_index)
-	pattern_state.add_do_action(func() -> void:
-		var reference_pattern := Controller.current_song.patterns[pattern_state.reference_id]
-		reference_pattern.remove_note(note_data.x, note_data.y, true)
-	)
-	pattern_state.add_undo_action(func() -> void:
-		var reference_pattern := Controller.current_song.patterns[pattern_state.reference_id]
-		reference_pattern.add_note(note_data.x, note_data.y, note_data.z)
-	)
-	
-	Controller.state_manager.commit_state_change(pattern_state)
+	var next_notes: Array[Vector3i] = []
+	next_notes.assign(current_pattern.notes.slice(0, current_pattern.note_amount))
+	next_notes.erase(note_data)
+	SongEditService.replace_notes(Controller.current_pattern_index, next_notes, true)
 
 
 func _preview_note_at_cursor(row_index: int) -> void:

@@ -1,9 +1,19 @@
 # Bosca Ceoil Blue MCP 擴充設計與實作計畫
 
 日期：2026-10-12（Asia/Taipei）
-狀態：設計完成，實作尚未開始。本文所有未勾選任務均為後續工作。
+狀態：實作進行中（`feat/mcp-runtime`）。核心編曲、CEOL 存取與 WAV／MIDI jobs 已有通過測試的版本；尚未完成全部發行驗收。
 基準：`main`，`4b6b5c6`（3.2-dev）；規劃前工作樹乾淨。
 目標專案：`C:\Users\guguc\GitHub\boscaceoil-blue`。
+
+### 目前實作證據（2026-10-12）
+
+- 已完成 runtime loopback bridge、token 認證、MCP stdio server、唯讀查詢與 resources。
+- 已接入歌曲／樂器／pattern／音符／編曲／loop／播放／Undo／Redo，包含 revision 衝突與 operation_id 去重。
+- UI 的音符新增／刪除已與 MCP 共用 note replacement command。
+- CEOL v1/v2/v3 載入前驗證、安全儲存、WAV／MIDI 非同步 job／取消已實作。
+- 驗證：57 項 Godot domain checks、10 項 Node／協定／檔案測試，以及一條真實 MCP client＋Godot 主場景端到端測試（含 WAV/MIDI／取消）通過。
+- 安裝入口與目前限制見 [docs/mcp/README.md](docs/mcp/README.md)。設定 UI、CI、更多故障注入與跨平台打包仍待收尾；以下任務勾選以完整驗收為準。
+- 實作調整：Godot 4.3 的 Windows rename 會先移除既有目標；檔案服務改以固定 Node publisher 執行原子發布，Godot 仍負責格式與資料夾驗證。首版只接受 root 下的單層檔名，暫不開放子資料夾。
 
 ## 1. 目標、範圍與完成定義
 
@@ -53,7 +63,7 @@
 | `SongLoader.gd` 支援格式 1／2／3，仍有載入後驗證 TODO | 新 MCP open 不能只把 load 非 null 當作有效歌曲 |
 | 既有 PR CI 主要匯出應用與建置文件；未找到專用 domain 自動測試套件 | 新增測試入口，不能把 workflow 名稱中的 Test 當作已有行為測試 |
 
-沒有找到適用的 `AGENTS.md` 或既有 `plan.md`。本次僅新增本文件，不安裝套件、不變更應用行為。
+規劃時沒有找到適用的 `AGENTS.md` 或既有 `plan.md`；其後實作進度以文件頂端為準。
 
 ## 3. 架構設計與選型
 
@@ -423,4 +433,4 @@ M3 發行前逐項完成：
 - [MCP 2026-07-28 Transports](https://github.com/modelcontextprotocol/modelcontextprotocol/blob/main/docs/specification/2026-07-28/basic/transports/index.mdx)：外部 MCP transport 依據。
 - [Godot 4.3 TCPServer](https://docs.godotengine.org/en/4.3/classes/class_tcpserver.html)：runtime 本機 TCP 可用介面。
 
-外部版本會變動；實作開始時重查並將實際測試成功版本寫入 lockfile 和文件。這份計畫尚未執行應用 build、音訊測試或 MCP 互通測試，不能把方案中的目標當成既有功能。
+外部版本會變動；實際測試版本已固定於 lockfile 和安裝文件。方案中的未驗收目標仍不可當成既有能力；目前測試證據見文件頂端。

@@ -49,4 +49,10 @@ func finalize_write() -> int:
 		
 		JavaScriptBridge.download_buffer(file_buffer, download_name)
 	
+	else:
+		_handler.flush()
+		var error := _handler.get_error()
+		_handler.close()
+		if error != OK:
+			return error
 	return OK

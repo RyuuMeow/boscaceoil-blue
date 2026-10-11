@@ -19,6 +19,11 @@ static func load(path: String) -> Song:
 		return null
 	
 	var file_contents := file.get_as_text()
+	return load_text(file_contents, path)
+
+
+## Parse a previously read document, avoiding a second filesystem read after validation.
+static func load_text(file_contents: String, path: String = "") -> Song:
 	var reader := SongFileReader.new(path, file_contents)
 	
 	# TODO: Add a validation step after loading, to update song data and remove invalid bits.

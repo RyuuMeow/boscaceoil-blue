@@ -304,6 +304,14 @@ func add_note(value: int, position: int, length: int, full_update: bool = true) 
 		notes_changed.emit()
 
 
+## Replace active notes without leaving stale hash or inactive note data behind.
+func replace_notes(stored_notes: Array[Vector3i]) -> void:
+	note_amount = 0
+	_hash = 0
+	notes.fill(Vector3i(-1, 0, 0))
+	restore_notes(stored_notes)
+
+
 func restore_notes(stored_notes: Array[Vector3i]) -> void:
 	for note_data: Vector3i in stored_notes:
 		add_note(note_data.x, note_data.y, note_data.z, false)

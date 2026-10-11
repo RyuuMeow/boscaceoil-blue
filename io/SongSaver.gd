@@ -7,7 +7,7 @@
 class_name SongSaver extends RefCounted
 
 
-static func save(song: Song, path: String) -> bool:
+static func save(song: Song, path: String, update_metadata: bool = true) -> bool:
 	if path.get_extension() != Song.FILE_EXTENSION:
 		printerr("SongSaver: The song file must have a .%s extension." % [ Song.FILE_EXTENSION ])
 		return false
@@ -33,15 +33,16 @@ static func save(song: Song, path: String) -> bool:
 		printerr("SongSaver: Failed to finalize write to the file at '%s' (code %d)." % [ path, error ])
 		return false
 	
-	song.filename = path
+	if update_metadata:
+		song.filename = path
+		song.format_version = Song.FILE_FORMAT
 	return true
 
 
 static func _write(writer: SongFileWriter, song: Song) -> void:
 	# Basic information.
 	
-	song.format_version = Song.FILE_FORMAT # Bump the version as we save the song in the modern format.
-	writer.write_int(song.format_version)
+	writer.write_int(Song.FILE_FORMAT)
 	
 	writer.write_int(song.swing)
 	writer.write_int(song.global_effect)

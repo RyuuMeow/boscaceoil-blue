@@ -29,6 +29,14 @@ var _state_future: Array[StateChange] = []
 
 # General history management.
 
+func can_undo() -> bool:
+	return not _pending_changes && not _state_history.is_empty()
+
+
+func can_redo() -> bool:
+	return not _pending_changes && not _state_future.is_empty()
+
+
 func clear_state_memory() -> void:
 	_state_history.clear()
 	_state_future.clear()
