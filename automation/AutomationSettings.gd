@@ -17,7 +17,11 @@ func _ready() -> void:
 	add_child(body)
 	var help := Label.new()
 	help.text = "Create the configuration with mcp/dist/configure.js first.\nSelect the same file in Bosca and your MCP host."
+	if FileAccess.file_exists(_installed_helper()):
+		help.text = "Connect Bosca to Codex with one click below.\nKeep Bosca open while using its MCP tools."
 	body.add_child(help)
+	if FileAccess.file_exists(_installed_helper()):
+		_button(body, "Install in Codex", _install_codex)
 	_path = _field(body, "Configuration file", bridge.config_path)
 	_button(body, "Choose configuration...", _choose_file)
 	_enabled = CheckBox.new()
@@ -124,3 +128,33 @@ func _copy_client() -> void:
 	if node.is_empty(): return
 	var script: String = config.get("publisher_script", "").get_base_dir().path_join("index.js")
 	DisplayServer.clipboard_set(JSON.stringify({"command": node, "args": [script, "--config", bridge.config_path]}, "  "))
+
+
+func _installed_helper() -> String:
+	return OS.get_executable_path().get_base_dir().path_join("mcp/dist/install-codex.js")
+
+
+func _install_codex() -> void:
+	if bridge.router.jobs.is_busy():
+		bridge.status_message = "Wait for the export to finish before changing settings."
+		return
+	var config_dir := OS.get_environment("LOCALAPPDATA").path_join("BoscaCeoilBlueMCP")
+	var node := OS.get_executable_path().get_base_dir().path_join("runtime/node.exe")
+	var songs := _root.text if _root.text.is_absolute_path() else OS.get_system_dir(OS.SYSTEM_DIR_DOCUMENTS).path_join("Bosca Ceoil Blue")
+	var output: Array = []
+	var result := OS.execute(node, PackedStringArray([_installed_helper(), "--config-dir", config_dir,
+		"--songs-dir", songs, "--mode", "edit" if _editing.button_pressed else "read_only"]), output, true)
+	if result == 0:
+		_path.text = config_dir.path_join("mcp.json")
+		Controller.settings_manager.mcp_config_path = _path.text
+		Controller.settings_manager.save_settings()
+		bridge.reload_configuration(_path.text)
+		_refresh()
+	var message := AcceptDialog.new()
+	message.title = "Codex connection"
+	message.dialog_autowrap = true
+	message.dialog_text = str(output[0]).strip_edges() if not output.is_empty() else "Setup could not run. Reinstall the application."
+	message.confirmed.connect(message.queue_free)
+	message.canceled.connect(message.queue_free)
+	add_child(message)
+	message.popup_centered(Vector2i(650, 200))

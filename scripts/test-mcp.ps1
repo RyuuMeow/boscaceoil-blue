@@ -7,6 +7,8 @@ param(
 $ErrorActionPreference = 'Stop'
 $project = Split-Path $PSScriptRoot -Parent
 $nodePath = (Get-Command $Node).Source
+$godotPath = if ($Suite -ne 'Unit' -and $Godot) { (Get-Command $Godot).Source } else { '' }
+if ($NpmCli) { $NpmCli = (Resolve-Path -LiteralPath $NpmCli).Path }
 function Invoke-Npm([string[]]$Arguments) {
     if ($NpmCli) { & $nodePath $NpmCli @Arguments } else { & npm @Arguments }
     if ($LASTEXITCODE -ne 0) { throw "npm failed: $Arguments" }
@@ -24,7 +26,6 @@ try {
     if ($Suite -in @('All', 'Unit')) { Invoke-Npm @('run', 'test:unit') }
     if ($Suite -ne 'Unit') {
         if (-not $Godot) { throw 'Pass -Godot or set BOSCA_GODOT to Godot 4.3.' }
-        $godotPath = (Get-Command $Godot).Source
         New-Item -ItemType Directory -Path $scratch | Out-Null
         $env:APPDATA = $scratch
         $env:XDG_DATA_HOME = $scratch

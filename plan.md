@@ -1,7 +1,7 @@
 # Bosca Ceoil Blue MCP 擴充設計與實作計畫
 
 日期：2026-10-12（Asia/Taipei）
-狀態：首輪實作已交付（`feat/mcp-runtime`）。編曲、CEOL、WAV／MIDI、設定 UI、測試腳本與 CI 已實作；完整發行驗收仍有下列明列項目。
+狀態：首輪實作與 Windows installer 已交付（`feat/windows-installer`，基於 `feat/mcp-runtime`）。編曲、CEOL、WAV／MIDI、設定 UI、Codex 快速連接、測試腳本與 CI 已實作；完整跨平台發行驗收仍有下列明列項目。
 基準：`main`，`4b6b5c6`（3.2-dev）；規劃前工作樹乾淨。
 目標專案：`C:\Users\guguc\GitHub\boscaceoil-blue`。
 
@@ -11,9 +11,10 @@
 - 已接入歌曲／樂器／pattern／音符／編曲／loop／播放／Undo／Redo，包含 revision 衝突與 operation_id 去重。
 - UI 的音符新增／刪除已與 MCP 共用 note replacement command。
 - CEOL v1/v2/v3 載入前驗證、安全儲存、WAV／MIDI 非同步 job／取消已實作。
-- 驗證：83 項 Godot domain／設定 UI 建構 checks、11 項 Node／協定／檔案測試，以及一條真實 MCP client＋Godot 主場景端到端測試（含 WAV/MIDI／取消／同名檔案故障復原／錯誤認證／超長包）通過。
+- 驗證：83 項 Godot domain／設定 UI 建構 checks、13 項 Node／協定／檔案／Codex 註冊測試，以及一條真實 MCP client＋Godot 主場景端到端測試（含 WAV/MIDI／取消／同名檔案故障復原／錯誤認證／超長包）通過。
+- Windows installer 內含 Node/GDSiON/production MCP dependencies，提供 Codex 連接與可選編輯權限；已通過隔離安裝 → 真實 Codex CLI 註冊 → exported app CEOL/WAV/MIDI → 解除安裝保留歌曲／設定的測試。建置入口與驗證方式見 [docs/mcp/packaging.md](docs/mcp/packaging.md)。
 - 設定 UI 可控制啟用、唯讀、port、root、token rotation、斷線與複製 host 設定；初次 config 由 CLI 產生。已加入 `scripts/test-mcp.ps1` 與 Windows CI workflow。Windows PCK 封裝通過，已排除 Node／測試資料。
-- 交付基礎：核心 commit `facc514`；後續設定／CI／文件變更見本分支紀錄。安裝與限制見 [docs/mcp/README.md](docs/mcp/README.md)。GitHub CI 尚未遠端執行；完整 executable／Web 匯出、原生視窗手動互動、人工聆聽、Linux/macOS 與效能分位數仍待發行驗收。下列細項未勾選代表整項驗收未齊，不代表其程式完全未做。
+- 交付基礎：核心 commit `facc514`；後續設定／CI／文件變更見本分支紀錄。安裝與限制見 [docs/mcp/README.md](docs/mcp/README.md)。GitHub CI 尚未遠端執行；Web 匯出、原生視窗手動互動、人工聆聽、Linux/macOS、全新 Windows 機器與效能分位數仍待發行驗收。下列細項未勾選代表整項驗收未齊，不代表其程式完全未做。
 - 實作調整：Godot 4.3 的 Windows rename 會先移除既有目標；檔案服務改以固定 Node publisher 執行原子發布，Godot 仍負責格式與資料夾驗證。首版只接受 root 下的單層檔名，暫不開放子資料夾。
 
 ## 1. 目標、範圍與完成定義

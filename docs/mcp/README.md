@@ -7,6 +7,28 @@ The Web build does not start a bridge.
 
 ## Install and start
 
+### Windows installer
+
+The Windows x64 preview installer bundles the application, GDSiON, Node.js and
+production MCP dependencies. No separate Node install is needed. It installs for
+the current user and offers **Connect MCP to Codex** plus an optional **Allow
+Codex to edit songs and export files** checkbox. Existing configuration is preserved
+on upgrades. Fresh connections default to read-only.
+
+After setup, start Bosca and restart MCP servers in Codex Settings (or restart
+Codex). The app also offers **Advanced → MCP Settings → Install in Codex** to
+connect later. Setup uses the official `codex mcp add` command and verifies the
+result; unrelated existing entries are left untouched. Other MCP hosts can use
+the dialog's copy-configuration button. See the [official Codex MCP guide](https://learn.chatgpt.com/docs/extend/mcp).
+
+The installer config lives at `%LOCALAPPDATA%/BoscaCeoilBlueMCP/mcp.json`; packaged
+Windows builds load it automatically if no environment or saved config path is
+set. Default songs go in Documents/Bosca Ceoil Blue. Uninstall removes only this
+installation's unchanged Codex entry and retains songs/settings. The preview is
+unsigned. See [packaging.md](packaging.md) for builds and installer smoke tests.
+
+### From source
+
 Requirements: Godot 4.3, GDSiON 0.7-beta8 in `bin/`, and Node.js 22 or newer.
 The implementation has been tested with Node.js 24.19.0 on Windows.
 The MCP SDK is pinned to 2.3.1; the stdio entry supports legacy MCP handshakes
@@ -135,15 +157,17 @@ The domain runner is `tests/automation/runner.tscn`. It requires
 executable path), and prints `AUTOMATION_TESTS: ...` with the check count. Missing
 that completion marker or any `SCRIPT ERROR` is a failed run even if Godot exits 0.
 
-Current validation: 83 Godot domain/UI-construction checks, 11 Node tests and one
+Current validation: 83 Godot domain/UI-construction checks, 13 Node tests and one
 end-to-end scenario through the official SDK client and real GDSiON. The scenario
 covers two voices/eight bars, undo/redo, CEOL round-trip, WAV/MIDI, cancellation,
 authentication rejection, oversized messages and publication failure recovery.
-Windows PCK export succeeds and excludes MCP dependencies/tests. The Windows CI
+Windows executable export and installer smoke tests also pass: actual install,
+real Codex registration in an isolated profile, packaged runtime/CEOL/WAV/MIDI,
+and uninstall preserving song/config files. The Windows CI
 workflow runs the same suite, but has not been run on GitHub yet.
 
-Manual listening, native-dialog interaction, packaged executable smoke tests,
-performance percentiles and Linux/macOS/Web release validation remain release
+Manual listening, native-dialog interaction, performance percentiles and
+Linux/macOS/Web release validation remain release
 gates. The unmodified baseline also emits Godot resource-leak warnings on headless
 exit; these warnings are not counted as passed assertions. See `plan.md` for the
 release checklist, [protocol.md](protocol.md) for semantics and

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { spawnSync } from 'node:child_process';
-import { mkdtemp, readFile, rm, readdir } from 'node:fs/promises';
+import { mkdtemp, readFile, writeFile, rm, readdir } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 
@@ -23,6 +23,10 @@ test('configuration creation, protected updates and token rotation preserve the 
     assert.equal(updated.mode, 'edit');
     assert.equal(updated.enabled, false);
     assert.equal(updated.port, 37642);
+    updated.roots.songs.write = false;
+    await writeFile(config, JSON.stringify(updated));
+    assert.equal(run('--update', 'true').status, 0);
+    assert.equal(JSON.parse(await readFile(config, 'utf8')).roots.songs.write, false);
     const beforeFailure = await readFile(config, 'utf8');
     assert.equal(run('--update', 'true', '--port', '1').status, 1);
     assert.equal(await readFile(config, 'utf8'), beforeFailure);

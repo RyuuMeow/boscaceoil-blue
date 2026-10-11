@@ -47,7 +47,7 @@ if (!valid || !path || !root || !isAbsolute(path) || !isAbsolute(root) || !['rea
       const token = update && values.get('--rotate') !== 'true' ? previous.token : randomBytes(32).toString('hex');
       if (typeof token !== 'string' || token.length < 32 || token.length > 256) throw new Error('Invalid existing token; request rotation.');
       await file.writeFile(JSON.stringify({ ...previous, enabled: values.get('--enabled') !== 'false', mode, port, token,
-        roots: { ...previous.roots, songs: { path: actualRoot.replaceAll('\\', '/'), read: true, write: true } },
+        roots: { ...previous.roots, songs: { path: actualRoot.replaceAll('\\', '/'), read: previous.roots?.songs?.read ?? true, write: previous.roots?.songs?.write ?? true } },
         publisher_node: process.execPath.replaceAll('\\', '/'), publisher_script: fileURLToPath(new URL('./publish.js', import.meta.url)).replaceAll('\\', '/'),
       }, null, 2) + '\n');
       await file.sync();

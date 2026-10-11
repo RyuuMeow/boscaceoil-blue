@@ -29,6 +29,10 @@ func _ready() -> void:
 	config_path = OS.get_environment("BOSCA_MCP_CONFIG")
 	if config_path.is_empty():
 		config_path = Controller.settings_manager.mcp_config_path
+	if config_path.is_empty() && OS.has_feature("windows") && not OS.has_feature("editor"):
+		var installed_config := OS.get_environment("LOCALAPPDATA").path_join("BoscaCeoilBlueMCP/mcp.json")
+		if FileAccess.file_exists(installed_config):
+			config_path = installed_config
 	reload_configuration(config_path)
 
 
